@@ -1,0 +1,11 @@
+{
+  "projectName": "NetLens",
+  "description": "AI-powered network terminal for network engineers",
+  "permissions": {
+    "allow": [
+      "read",
+      "edit",
+      "bash"
+    ]
+  }
+}
