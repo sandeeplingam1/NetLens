@@ -133,7 +133,7 @@ export default function AISidebar() {
   const [agentMode, setAgentMode] = useState(false)
   const endRef   = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const api = window.helixAPI
+  const api = window.netlensAPI
   const agent = useAgentLoop()
 
   const activeTab = tabs.find(t => t.id === activeTabId)

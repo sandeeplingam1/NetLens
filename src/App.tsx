@@ -27,7 +27,7 @@ function ViewFallback() {
   return <div className="view-fallback"><div className="view-spinner" /></div>
 }
 
-const api = (window as any).helixAPI
+const api = (window as any).netlensAPI
 
 export default function App() {
   const {

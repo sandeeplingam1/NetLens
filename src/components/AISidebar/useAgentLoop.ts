@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { useStore, ChatMessage } from '../../store/appStore'
 import { useTopologyStore } from '../../store/topologyStore'
 
-const api = (window as any).helixAPI
+const api = (window as any).netlensAPI
 
 export interface AgentApprovalItem {
   id: string

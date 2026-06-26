@@ -6,7 +6,7 @@ import './BroadcastBar.css'
 export default function BroadcastBar() {
   const { broadcastMode, toggleBroadcast, tabs } = useStore()
   const [cmd, setCmd] = useState('')
-  const api = (window as any).helixAPI
+  const api = (window as any).netlensAPI
 
   if (!broadcastMode) return null
 

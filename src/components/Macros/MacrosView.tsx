@@ -3,7 +3,7 @@ import { Plus, Trash2, Play, Edit3, ChevronDown, ChevronUp, GripVertical, Clock 
 import { useStore, Macro, MacroCommand } from '../../store/appStore'
 import './MacrosView.css'
 
-const api = (window as any).helixAPI
+const api = (window as any).netlensAPI
 
 export default function MacrosView() {
   const { macros, addMacro, updateMacro, deleteMacro, tabs, activeTabId } = useStore()

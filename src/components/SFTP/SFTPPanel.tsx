@@ -33,7 +33,7 @@ export default function SFTPPanel() {
   const [error, setError]     = useState<string | null>(null)
   const [history, setHistory] = useState<string[]>([])
 
-  const api = (window as any).helixAPI
+  const api = (window as any).netlensAPI
 
   const loadDir = useCallback(async (dirPath: string) => {
     if (!api || !activeTab?.isConnected || !session) {

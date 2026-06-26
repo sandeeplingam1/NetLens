@@ -3,7 +3,7 @@ import { Shield, AlertTriangle, X } from 'lucide-react'
 import { useStore } from '../../store/appStore'
 import './SSHDialogs.css'
 
-const api = (window as any).helixAPI
+const api = (window as any).netlensAPI
 
 // ── Host Key Dialog ───────────────────────────────────────────────────────────
 export function HostKeyDialog() {

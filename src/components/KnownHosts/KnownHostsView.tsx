@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Trash2, Shield, RefreshCw } from 'lucide-react'
 import './KnownHostsView.css'
 
-const api = (window as any).helixAPI
+const api = (window as any).netlensAPI
 
 interface KnownHost { key: string; host: string; port: string; fingerprint: string }
 

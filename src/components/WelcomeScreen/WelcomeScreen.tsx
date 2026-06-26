@@ -32,7 +32,7 @@ const CAPABILITIES = [
   { Icon: Radio,     label: 'Telnet',           desc: 'Full IAC negotiation, NAWS sizing' },
   { Icon: Cpu,       label: 'Serial / COM',     desc: 'Cisco console cable via USB adapter' },
   { Icon: GitBranch, label: 'Jump Host',        desc: 'Bastion / ProxyJump chain' },
-  { Icon: Bot,       label: 'Helix AI',         desc: 'GPT-4o · Claude · Gemini · Ollama' },
+  { Icon: Bot,       label: 'NetLens AI',       desc: 'GPT-4o · Claude · Gemini · Ollama' },
   { Icon: Zap,       label: 'Macros',           desc: 'Automate multi-step command flows' },
 ]
 
@@ -77,7 +77,7 @@ export default function WelcomeScreen() {
             </defs>
           </svg>
         </div>
-        <h1 className="hero-title">Welcome to Helix</h1>
+        <h1 className="hero-title">Welcome to NetLens</h1>
         <p className="hero-sub">The AI-powered network terminal built for engineers who move fast.</p>
 
         <div className="hero-actions">

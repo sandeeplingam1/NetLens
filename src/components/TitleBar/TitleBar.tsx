@@ -19,7 +19,7 @@ export default function TitleBar() {
       <div className="tb-left"></div>
 
       <div className="tb-center">
-        <span>Helix</span>
+        <span>NetLens</span>
       </div>
 
       <div className="tb-right no-drag">

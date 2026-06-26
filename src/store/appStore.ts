@@ -229,7 +229,7 @@ const mkPtyId  = () => `pty-${crypto.randomUUID()}`
 
 async function loadFromStore<T>(key: string, fallback: T): Promise<T> {
   try {
-    const val = await (window as any).helixAPI?.storeGet(key)
+    const val = await (window as any).netlensAPI?.storeGet(key)
     return (val ?? fallback) as T
   } catch { return fallback }
 }
@@ -428,7 +428,7 @@ export const useStore = create<AppState>((set, get) => ({
 
 // ── Persist helper ────────────────────────────────────────────────────────────
 function persist(key: string, value: any) {
-  try { (window as any).helixAPI?.storeSet(key, value) } catch {}
+  try { (window as any).netlensAPI?.storeSet(key, value) } catch {}
 }
 
 // ── Hydrate from store on boot ─────────────────────────────────────────────────

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { FileText, FolderOpen, RefreshCw, Download, Trash2, Clock, HardDrive } from 'lucide-react'
 import './LogsView.css'
 
-const api = (window as any).helixAPI
+const api = (window as any).netlensAPI
 
 interface LogEntry { name: string; path: string; size: number; mtime: number }
 

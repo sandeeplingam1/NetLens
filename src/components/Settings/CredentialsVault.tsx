@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Trash2, Edit3 } from 'lucide-react'
 import { useStore, Credential, AuthMethod } from '../../store/appStore'
 
-const api = (window as any).helixAPI
+const api = (window as any).netlensAPI
 
 export default function CredentialsVault() {
   const { credentials, addCredential, updateCredential, deleteCredential } = useStore()

@@ -3,7 +3,7 @@ import { Plus, Trash2, Play, Square, ArrowRight } from 'lucide-react'
 import { useStore } from '../../store/appStore'
 import './PortForwardView.css'
 
-const api = (window as any).helixAPI
+const api = (window as any).netlensAPI
 
 export default function PortForwardView() {
   const { portForwards, addPortForward, removePortForward, updatePortForward, tabs, sessions } = useStore()

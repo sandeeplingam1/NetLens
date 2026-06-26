@@ -129,7 +129,7 @@ export const useTopologyStore = create<TopologyState>()(
       }
     }),
     {
-      name: 'helix-topology-storage',
+      name: 'netlens-topology-storage',
       storage: createJSONStorage(() => localStorage), 
     }
   )

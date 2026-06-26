@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
-contextBridge.exposeInMainWorld('helixAPI', {
+contextBridge.exposeInMainWorld('netlensAPI', {
   platform: process.platform,
 
   // ── Persistence ─────────────────────────────────────────────────────────────

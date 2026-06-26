@@ -1,5 +1,5 @@
 {
-  "name": "helix",
+  "name": "netlens",
   "version": "0.1.0",
   "description": "AI-powered network terminal for network engineers",
   "main": "electron/main.js",
@@ -14,7 +14,7 @@
     "test:watch": "vitest"
   },
   "build": {
-    "appId": "com.helix.terminal",
+    "appId": "com.netlens.terminal",
     "productName": "Helix",
     "directories": {
       "output": "release"

@@ -89,7 +89,7 @@ export default function TerminalPane({ tab }: Props) {
   const { sessions, updateTab, appendOutput, setPendingInsert, pendingInsert, activeTabId, termSettings, highlights } = useStore()
   const session = tab.sessionId ? sessions.find(s => s.id === tab.sessionId) : null
 
-  const api = (window as any).helixAPI
+  const api = (window as any).netlensAPI
 
   const writeToTerm = useCallback((data: string) => {
     termRef.current?.write(data)

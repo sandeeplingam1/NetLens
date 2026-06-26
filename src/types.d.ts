@@ -69,6 +69,6 @@ export interface HelixAPI {
 
 declare global {
   interface Window {
-    helixAPI?: HelixAPI
+    netlensAPI?: HelixAPI
   }
 }

@@ -18,15 +18,15 @@ try { SerialPort = require('serialport').SerialPort } catch (e) { console.warn('
 const { Client: SSHClient } = require('ssh2')
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const KEYCHAIN_SERVICE = 'com.helix.terminal'
+const KEYCHAIN_SERVICE = 'com.netlens.terminal'
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
 // ── Persistent store ──────────────────────────────────────────────────────────
 let store = null
 if (Store) {
   store = new Store({
-    name: 'helix-data',
-    encryptionKey: 'helix-secret-2025', // basic obfuscation; keytar used for real secrets
+    name: 'netlens-data',
+    encryptionKey: 'netlens-secret-2025', // basic obfuscation; keytar used for real secrets
     defaults: {
       sessions:   [],
       aiSettings: {
@@ -96,7 +96,7 @@ function stopKeepalive(id) {
 
 // ── Window ────────────────────────────────────────────────────────────────────
 function createWindow() {
-  const iconPath = path.join(__dirname, '../public/helix-icon.png')
+  const iconPath = path.join(__dirname, '../public/netlens-icon.png')
   const icon = fs.existsSync(iconPath) ? nativeImage.createFromPath(iconPath) : undefined
 
   mainWindow = new BrowserWindow({
@@ -908,7 +908,7 @@ ipcMain.handle('dialog:save-file', async (_e, opts = {}) => {
 ipcMain.handle('sessions:export', async (_e, { sessions }) => {
   const savePath = await dialog.showSaveDialog(mainWindow, {
     title: 'Export Sessions',
-    defaultPath: `helix-sessions-${Date.now()}.json`,
+    defaultPath: `netlens-sessions-${Date.now()}.json`,
     filters: [{ name: 'JSON', extensions: ['json'] }],
   })
   if (savePath.cancelled) return { cancelled: true }

@@ -24,7 +24,7 @@ const BAUD_RATES = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 23
 
 export default function SessionModal() {
   const { credentials, editingSession, setEditingSession, setShowNewSessionModal, addSession, updateSession } = useStore()
-  const api = (window as any).helixAPI
+  const api = (window as any).netlensAPI
 
   const isEdit = !!editingSession
   const [form, setForm] = useState<Omit<Session, 'id'>>(editingSession ? { ...editingSession } : EMPTY_FORM)

@@ -351,7 +351,7 @@ export default function SettingsPage() {
                   </defs>
                 </svg>
               </div>
-              <h2>Helix</h2>
+              <h2>NetLens</h2>
               <p>Version 1.0.0</p>
               <p className="about-desc">AI-powered network terminal for network engineers. SSH, Telnet, Serial — with GPT/Claude/Gemini/Ollama built in.</p>
               <div className="about-features">

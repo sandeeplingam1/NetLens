@@ -3,7 +3,7 @@
 This file serves as the primary rulebook and context guide for the OpenCode AI agent when working on the NetLens project.
 
 ## Project Context
-- **Name:** NetLens (Package: `helix`)
+- **Name:** NetLens (Package: `netlens`)
 - **Description:** AI-powered network terminal for network engineers.
 - **Tech Stack:** React 19, TypeScript, Vite, Electron, Zustand, xterm.js, node-pty, ssh2, serialport.
 

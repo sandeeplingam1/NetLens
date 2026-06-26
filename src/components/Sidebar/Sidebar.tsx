@@ -59,7 +59,7 @@ export default function Sidebar() {
     setEditingSession, deleteSession, cloneSession,
   } = useStore()
 
-  const api = (window as any).helixAPI
+  const api = (window as any).netlensAPI
 
   const [search, setSearch]         = useState('')
   const [collapsed, setCollapsed]   = useState<Record<string, boolean>>({})

@@ -44,7 +44,7 @@ export default function StatusBar() {
       </div>
 
       <div className="sb-center">
-        <span className="sb-brand">Helix</span>
+        <span className="sb-brand">NetLens</span>
       </div>
 
       <div className="sb-right">
