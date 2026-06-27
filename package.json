@@ -9,33 +9,67 @@
     "dev:vite": "vite",
     "dev": "concurrently -k -n VITE,ELECTRON -c cyan,magenta \"vite\" \"wait-on tcp:5173 && electron .\"",
     "build": "vite build && electron-builder",
+    "build:mac": "vite build && electron-builder --mac",
+    "build:win": "vite build && electron-builder --win",
+    "build:linux": "vite build && electron-builder --linux",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "postinstall": "electron-rebuild -f -w node-pty,keytar,cpu-features,@serialport/bindings-cpp"
   },
   "build": {
     "appId": "com.netlens.terminal",
-    "productName": "Helix",
+    "productName": "NetLens",
     "directories": {
       "output": "release"
     },
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "node_modules/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/node-pty/**",
+      "node_modules/keytar/**",
+      "node_modules/@serialport/**",
+      "node_modules/cpu-features/**"
     ],
     "mac": {
-      "category": "public.app-category.developer-tools"
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "public/netlens-icon.png",
+      "artifactName": "${productName}-${version}-Mac.${ext}",
+      "hardenedRuntime": true,
+      "entitlements": "electron/entitlements.mac.plist",
+      "entitlementsInherit": "electron/entitlements.mac.plist"
     },
     "win": {
       "target": "nsis",
+      "icon": "public/netlens-icon.png",
       "artifactName": "${productName}-${version}-Windows.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "public/netlens-icon.png",
+      "artifactName": "${productName}-${version}-Linux.${ext}",
+      "category": "Network"
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true
-    },
-    "npmRebuild": false
+    }
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "sandeep lingam",
+    "repo": "netlens"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
@@ -45,6 +79,7 @@
     "@xyflow/react": "^12.11.1",
     "cpu-features": "^0.0.10",
     "electron-store": "^11.0.2",
+    "electron-updater": "^6.8.9",
     "keytar": "^7.9.0",
     "lucide-react": "^1.17.0",
     "node-pty": "^1.1.0",

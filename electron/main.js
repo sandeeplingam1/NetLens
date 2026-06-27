@@ -1,5 +1,17 @@
 'use strict'
 
+// ── Global error handlers ─────────────────────────────────────────────────────
+process.on('uncaughtException', (error) => {
+  console.error('[FATAL] Uncaught Exception:', error)
+  try {
+    dialog.showErrorBox('NetLens - Unexpected Error',
+      `An unexpected error occurred:\n\n${error.message}\n\nPlease restart the application.`)
+  } catch {}
+})
+process.on('unhandledRejection', (reason) => {
+  console.error('[FATAL] Unhandled Rejection:', reason)
+})
+
 const { app, BrowserWindow, ipcMain, shell, dialog, Menu, nativeImage } = require('electron')
 const path   = require('path')
 const fs     = require('fs')
@@ -94,6 +106,70 @@ function stopKeepalive(id) {
   if (t?.keepaliveTimer) { clearInterval(t.keepaliveTimer); t.keepaliveTimer = null }
 }
 
+// ── Content-Security-Policy ──────────────────────────────────────────────────
+function setCSP() {
+  try {
+    const { session } = require('electron')
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': [
+            "default-src 'self'; " +
+            "script-src 'self'; " +
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+            "font-src 'self' https://fonts.gstatic.com; " +
+            "img-src 'self' data:; " +
+            "connect-src 'self' ws://localhost:* http://localhost:* https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com; " +
+            "frame-src 'none'; object-src 'none'",
+          ],
+        },
+      })
+    })
+  } catch {}
+}
+
+// ── Auto-update ───────────────────────────────────────────────────────────────
+function setupAutoUpdate() {
+  try {
+    const { autoUpdater } = require('electron-updater')
+    autoUpdater.logger = console
+    autoUpdater.autoDownload = false
+
+    autoUpdater.on('update-available', (info) => {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Update Available',
+        message: `NetLens ${info.version} is available.`,
+        detail: 'Would you like to download it now?',
+        buttons: ['Download', 'Later'],
+        defaultId: 0,
+      }).then(({ response }) => {
+        if (response === 0) autoUpdater.downloadUpdate()
+      })
+    })
+
+    autoUpdater.on('update-downloaded', () => {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Update Ready',
+        message: 'A new version has been downloaded.',
+        detail: 'Restart to install the update?',
+        buttons: ['Restart', 'Later'],
+        defaultId: 0,
+      }).then(({ response }) => {
+        if (response === 0) autoUpdater.quitAndInstall()
+      })
+    })
+
+    autoUpdater.on('error', (err) => {
+      console.warn('Auto-update error:', err.message)
+    })
+
+    autoUpdater.checkForUpdates()
+  } catch { console.log('Auto-update not available (electron-updater not installed)') }
+}
+
 // ── Window ────────────────────────────────────────────────────────────────────
 function createWindow() {
   const iconPath = path.join(__dirname, '../public/netlens-icon.png')
@@ -103,18 +179,53 @@ function createWindow() {
     width: 1440, height: 900, minWidth: 900, minHeight: 600,
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#0a0e17',
+    show: false,
     icon,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: false,   // needed for node-pty; native modules require it
       spellcheck: false,
+      webSecurity: true,
     },
+  })
+
+  // Graceful show after ready
+  mainWindow.once('ready-to-show', () => { mainWindow.show() })
+
+  // Handle renderer crash
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    console.error('Renderer process crashed:', details.reason)
+    dialog.showMessageBox(mainWindow, {
+      type: 'error',
+      title: 'Renderer Crashed',
+      message: 'The application window has crashed.',
+      detail: `Reason: ${details.reason}\n\nYou can restart or close the application.`,
+      buttons: ['Restart', 'Close'],
+      defaultId: 0,
+    }).then(({ response }) => {
+      if (response === 0) mainWindow?.reload()
+      else mainWindow?.close()
+    })
+  })
+
+  // Handle unresponsive
+  mainWindow.on('unresponsive', () => {
+    dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      title: 'Not Responding',
+      message: 'The application is not responding.',
+      detail: 'You can wait or force quit.',
+      buttons: ['Wait', 'Force Quit'],
+      defaultId: 0,
+    }).then(({ response }) => {
+      if (response === 1) app.quit()
+    })
   })
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173')
-    // mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
@@ -131,21 +242,25 @@ function createWindow() {
   })
 
   buildAppMenu()
+
+  // Auto-update in production
+  if (!isDev) setupAutoUpdate()
 }
 
 function buildAppMenu() {
+  const appName = 'NetLens'
   const template = [
     {
-      label: 'Helix',
+      label: appName,
       submenu: [
-        { label: 'About Helix', role: 'about' },
+        { label: `About ${appName}`, role: 'about' },
         { type: 'separator' },
         { label: 'Settings', accelerator: 'Cmd+,', click: () => sendToRenderer('menu:settings') },
         { type: 'separator' },
-        { label: 'Hide Helix', role: 'hide' },
+        { label: `Hide ${appName}`, role: 'hide' },
         { label: 'Hide Others', role: 'hideOthers' },
         { type: 'separator' },
-        { label: 'Quit Helix', role: 'quit' },
+        { label: `Quit ${appName}`, role: 'quit' },
       ],
     },
     {
@@ -177,7 +292,7 @@ function buildAppMenu() {
         { label: 'SFTP Browser', accelerator: 'Cmd+Shift+S', click: () => sendToRenderer('menu:sftp') },
         { type: 'separator' },
         { label: 'Reload', role: 'reload' },
-        { label: 'Toggle DevTools', role: 'toggleDevTools' },
+        ...(isDev ? [{ label: 'Toggle DevTools', role: 'toggleDevTools' }] : []),
         { type: 'separator' },
         { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' },
         { type: 'separator' },
@@ -198,6 +313,7 @@ function buildAppMenu() {
 }
 
 app.whenReady().then(() => {
+  setCSP()
   createWindow()
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
 })

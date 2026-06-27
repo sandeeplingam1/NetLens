@@ -1,6 +1,6 @@
-# Helix
+# NetLens
 
-Helix is a modern, AI-powered desktop network terminal designed specifically for Network Engineers. It is a state-of-the-art alternative to legacy applications like SecureCRT or PuTTY, combining professional terminal capabilities with a sleek, modern interface and integrated AI assistance.
+NetLens is a modern, AI-powered desktop network terminal designed specifically for Network Engineers. It is a state-of-the-art alternative to legacy applications like SecureCRT or PuTTY, combining professional terminal capabilities with a sleek, modern interface and integrated AI assistance.
 
 ## Features
 
@@ -15,21 +15,25 @@ Helix is a modern, AI-powered desktop network terminal designed specifically for
 
 ## Installation
 
-Helix runs entirely locally. You can download the latest installer from the **Actions** tab in this repository.
+NetLens runs entirely locally. You can download the latest installer from the [Releases](https://github.com/sandeep-lingam/netlens/releases) page.
 
 ### For Mac (Apple Silicon)
-1. Download the `Helix-v1.0-Mac.dmg` release.
-2. Double-click the DMG and drag Helix into your Applications folder.
+1. Download the `NetLens-v1.0-Mac.dmg` release.
+2. Double-click the DMG and drag NetLens into your Applications folder.
 3. *Note: As this is an unsigned application, you may need to Right-Click -> Open the app the first time to bypass the macOS "Unidentified Developer" warning.*
 
 ### For Windows
-1. Go to the **Actions** tab in GitHub.
-2. Click the latest successful run of the **"Build Windows App"** workflow.
-3. Scroll down to the **Artifacts** section and download the `Helix-Windows-Installer.exe`.
+1. Download the latest `NetLens-v1.0-Windows.exe` from the [Releases](https://github.com/sandeep-lingam/netlens/releases) page.
+2. Double-click the installer and follow the setup wizard.
+
+### For Linux
+1. Download the `.AppImage` or `.deb` from the [Releases](https://github.com/sandeep-lingam/netlens/releases) page.
+2. Make the AppImage executable: `chmod +x NetLens-*.AppImage`
+3. Run it: `./NetLens-*.AppImage`
 
 ## Development
 
-Helix is built with **Electron**, **React**, **TypeScript**, and **Vite**.
+NetLens is built with **Electron**, **React**, **TypeScript**, and **Vite**.
 
 To run the app in developer mode (with hot-reloading):
 
