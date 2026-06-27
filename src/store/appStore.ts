@@ -6,6 +6,7 @@ export type AuthMethod = 'password' | 'key' | 'agent'
 export type Protocol   = 'SSH' | 'Telnet' | 'Serial'
 export type AIProvider = 'openai' | 'anthropic' | 'google' | 'ollama'
 export type SplitLayout= 'single' | 'horizontal' | 'vertical' | 'quad'
+export type ThemeMode = 'dark' | 'light' | 'high-contrast'
 
 export interface JumpHost {
   host: string; port: number; username: string
@@ -103,6 +104,44 @@ export interface KeyboardInteractiveEvent {
   id: string; prompts: { prompt: string; echo: boolean }[]
 }
 
+export interface ShortcutEntry {
+  id: string; label: string; category: string
+  keys: string // e.g. 'Meta+k' or 'Meta+Shift+A'
+  defaultKeys: string
+}
+
+export const DEFAULT_SHORTCUTS: ShortcutEntry[] = [
+  { id: 'palette',     label: 'Command Palette',      category: 'General',    keys: 'Meta+k',            defaultKeys: 'Meta+k' },
+  { id: 'new-tab',     label: 'New Tab',               category: 'Session',   keys: 'Meta+t',            defaultKeys: 'Meta+t' },
+  { id: 'close-tab',   label: 'Close Tab',             category: 'Session',   keys: 'Meta+w',            defaultKeys: 'Meta+w' },
+  { id: 'settings',    label: 'Settings',              category: 'General',   keys: 'Meta+,',            defaultKeys: 'Meta+,' },
+  { id: 'lock',        label: 'Lock Session',           category: 'Security',  keys: 'Meta+l',            defaultKeys: 'Meta+l' },
+  { id: 'toggle-ai',   label: 'Toggle AI Sidebar',     category: 'View',      keys: 'Meta+Shift+A',      defaultKeys: 'Meta+Shift+A' },
+  { id: 'sftp',        label: 'SFTP Browser',           category: 'View',      keys: 'Meta+Shift+S',      defaultKeys: 'Meta+Shift+S' },
+  { id: 'logs',        label: 'Session Logs',           category: 'View',      keys: 'Meta+Shift+L',      defaultKeys: 'Meta+Shift+L' },
+  { id: 'topology',    label: 'Topology View',          category: 'View',      keys: 'Meta+Shift+T',      defaultKeys: 'Meta+Shift+T' },
+  { id: 'broadcast',   label: 'Toggle Broadcast',       category: 'Session',   keys: 'Meta+Shift+B',      defaultKeys: 'Meta+Shift+B' },
+  { id: 'split-h',     label: 'Split Horizontal',       category: 'Layout',    keys: 'Meta+Shift+H',      defaultKeys: 'Meta+Shift+H' },
+  { id: 'split-v',     label: 'Split Vertical',         category: 'Layout',    keys: 'Meta+Shift+V',      defaultKeys: 'Meta+Shift+V' },
+  { id: 'split-quad',  label: 'Quad Split',             category: 'Layout',    keys: 'Meta+Shift+4',      defaultKeys: 'Meta+Shift+4' },
+  { id: 'split-single',label: 'Single Pane',            category: 'Layout',    keys: 'Meta+Shift+1',      defaultKeys: 'Meta+Shift+1' },
+  { id: 'pane-prev',   label: 'Previous Pane',          category: 'Layout',    keys: 'Meta+[',            defaultKeys: 'Meta+[' },
+  { id: 'pane-next',   label: 'Next Pane',              category: 'Layout',    keys: 'Meta+]',            defaultKeys: 'Meta+]' },
+]
+
+export function matchShortcut(e: KeyboardEvent, shortcutKeys: string): boolean {
+  const parts = shortcutKeys.split('+')
+  const meta = parts.includes('Meta') || parts.includes('Cmd')
+  const ctrl = parts.includes('Ctrl')
+  const shift = parts.includes('Shift')
+  const alt = parts.includes('Alt') || parts.includes('Option')
+  const key = parts[parts.length - 1]
+  return ((e.metaKey && meta) || (e.ctrlKey && ctrl)) &&
+    e.shiftKey === shift &&
+    e.altKey === alt &&
+    e.key.toLowerCase() === key.toLowerCase()
+}
+
 export interface Workspace {
   id: string; name: string; description?: string
   sessionIds: string[]; createdAt: number
@@ -173,6 +212,15 @@ export interface AppState {
   // AI
   aiSettings: AISettings
   updateAISettings: (s: Partial<AISettings>) => void
+
+  // Theme
+  theme: ThemeMode
+  setTheme: (t: ThemeMode) => void
+
+  // Keyboard shortcuts
+  shortcuts: ShortcutEntry[]
+  updateShortcut: (id: string, keys: string) => void
+  resetShortcuts: () => void
 
   // Terminal Settings
   termSettings: TermSettings
@@ -468,6 +516,26 @@ export const useStore = create<AppState>((set, get) => ({
   aiSettings: DEFAULT_AI,
   updateAISettings: (s) => set(st => { const aiSettings = { ...st.aiSettings, ...s }; persist('aiSettings', aiSettings); return { aiSettings } }),
 
+  // Theme
+  theme: 'dark',
+  setTheme: (theme) => {
+    persist('theme', theme)
+    document.documentElement.setAttribute('data-theme', theme)
+    set({ theme })
+  },
+
+  // Keyboard shortcuts
+  shortcuts: DEFAULT_SHORTCUTS.map(s => ({ ...s })),
+  updateShortcut: (id, keys) => set(st => {
+    const shortcuts = st.shortcuts.map(s => s.id === id ? { ...s, keys } : s)
+    persist('shortcuts', shortcuts)
+    return { shortcuts }
+  }),
+  resetShortcuts: () => {
+    persist('shortcuts', DEFAULT_SHORTCUTS.map(s => ({ ...s })))
+    set({ shortcuts: DEFAULT_SHORTCUTS.map(s => ({ ...s })) })
+  },
+
   // Terminal settings
   termSettings: DEFAULT_TERM,
   updateTermSettings: (s) => set(st => { const termSettings = { ...st.termSettings, ...s }; persist('termSettings', termSettings); return { termSettings } }),
@@ -528,7 +596,7 @@ function persist(key: string, value: any) {
 // ── Hydrate from store on boot ─────────────────────────────────────────────────
 async function hydrate() {
   try {
-    const [sessions, aiSettings, termSettings, macros, highlights, credentials, workspaces, activeWorkspaceId] = await Promise.all([
+    const [sessions, aiSettings, termSettings, macros, highlights, credentials, workspaces, activeWorkspaceId, theme, shortcuts] = await Promise.all([
       loadFromStore<Session[]>('sessions', []),
       loadFromStore<Partial<AISettings>>('aiSettings', {}),
       loadFromStore<Partial<TermSettings>>('termSettings', {}),
@@ -537,7 +605,11 @@ async function hydrate() {
       loadFromStore<Credential[]>('credentials', []),
       loadFromStore<Workspace[]>('workspaces', []),
       loadFromStore<string | null>('activeWorkspaceId', null),
+      loadFromStore<ThemeMode>('theme', 'dark'),
+      loadFromStore<ShortcutEntry[]>('shortcuts', []),
     ])
+    const resolvedTheme = theme || 'dark'
+    document.documentElement.setAttribute('data-theme', resolvedTheme)
     useStore.setState(st => ({
       sessions:     sessions.length > 0 ? sessions : st.sessions,
       aiSettings:   { ...st.aiSettings, ...aiSettings },
@@ -547,6 +619,8 @@ async function hydrate() {
       credentials:  credentials.length > 0 ? credentials : st.credentials,
       workspaces:   workspaces.length > 0 ? workspaces : st.workspaces,
       activeWorkspaceId: activeWorkspaceId || st.activeWorkspaceId,
+      theme:        resolvedTheme,
+      shortcuts:    shortcuts.length > 0 ? shortcuts : st.shortcuts,
     }))
   } catch (e) {
     (window as any).netlensAPI?.log?.('warn', 'Hydration skipped:', e)

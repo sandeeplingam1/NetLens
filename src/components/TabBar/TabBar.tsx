@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, memo } from 'react'
 import { Plus } from 'lucide-react'
 import { useStore } from '../../store/appStore'
 import './TabBar.css'
 
-export default function TabBar() {
+export default memo(function TabBar() {
   const { tabs, activeTabId, setActiveTab, closeTab, addTab, moveTab } = useStore()
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tabId: string } | null>(null)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
@@ -116,4 +116,4 @@ export default function TabBar() {
       )}
     </div>
   )
-}
+})

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Bot, Terminal, Shield, Keyboard, Info, Highlighter, Lock, Plus, Trash2, Eye, EyeOff, Key } from 'lucide-react'
-import { useStore, AIProvider, HighlightRule } from '../../store/appStore'
+import { Bot, Terminal, Shield, Keyboard, Info, Highlighter, Lock, Plus, Trash2, Eye, EyeOff, Key, Sun, Moon, Contrast, RotateCcw } from 'lucide-react'
+import { useStore, AIProvider, HighlightRule, ThemeMode } from '../../store/appStore'
 import CredentialsVault from './CredentialsVault'
 import './SettingsPage.css'
 
@@ -13,13 +13,57 @@ const PROVIDERS: { id: AIProvider; name: string; models: string[]; keyLabel: str
 
 const FONT_FAMILIES = ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Menlo', 'Monaco', 'Courier New', 'Consolas']
 
-type SettingsTab = 'ai' | 'terminal' | 'credentials' | 'highlights' | 'security' | 'shortcuts' | 'about'
+type SettingsTab = 'ai' | 'terminal' | 'appearance' | 'credentials' | 'highlights' | 'security' | 'shortcuts' | 'about'
+
+function ShortcutRow({ shortcut, onChange }: { shortcut: { id: string; label: string; keys: string; defaultKeys: string }; onChange: (keys: string) => void }) {
+  const [capturing, setCapturing] = useState(false)
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const parts: string[] = []
+    if (e.metaKey) parts.push('Meta')
+    if (e.ctrlKey) parts.push('Ctrl')
+    if (e.altKey) parts.push('Alt')
+    if (e.shiftKey) parts.push('Shift')
+    const key = e.key
+    if (key === 'Meta' || key === 'Shift' || key === 'Control' || key === 'Alt') return
+    if (key === 'Escape') { setCapturing(false); return }
+    parts.push(key.length === 1 ? key.toLowerCase() : key)
+    onChange(parts.join('+'))
+    setCapturing(false)
+  }
+
+  const displayKeys = shortcut.keys
+    .replace('Meta', '⌘')
+    .replace('Shift', '⇧')
+    .replace('Alt', '⌥')
+    .replace('Ctrl', '^')
+    .split('+')
+    .join('')
+
+  const isCustom = shortcut.keys !== shortcut.defaultKeys
+
+  return (
+    <div className={`shortcut-row ${capturing ? 'capturing' : ''}`}>
+      <code className="kbd" onClick={() => setCapturing(true)} onKeyDown={capturing ? handleKeyDown : undefined} tabIndex={0} role="button" aria-label={`Rebind ${shortcut.label}`}>
+        {capturing ? '...' : displayKeys}
+      </code>
+      <div className="shortcut-info">
+        <span>{shortcut.label}</span>
+        {isCustom && <span className="shortcut-modified">modified</span>}
+      </div>
+    </div>
+  )
+}
 
 export default function SettingsPage() {
   const {
     aiSettings, updateAISettings,
     termSettings, updateTermSettings,
+    theme, setTheme,
     highlights, addHighlight, updateHighlight, deleteHighlight,
+    shortcuts, updateShortcut, resetShortcuts,
     isLocked, lockSession, lockPin, setLockPin,
   } = useStore()
 
@@ -40,6 +84,7 @@ export default function SettingsPage() {
   const TABS: { id: SettingsTab; Icon: any; label: string }[] = [
     { id: 'ai',         Icon: Bot,          label: 'AI & Models' },
     { id: 'terminal',   Icon: Terminal,      label: 'Terminal' },
+    { id: 'appearance', Icon: Sun,           label: 'Appearance' },
     { id: 'credentials',Icon: Key,           label: 'Vault' },
     { id: 'highlights', Icon: Highlighter,   label: 'Highlights' },
     { id: 'security',   Icon: Lock,          label: 'Security' },
@@ -211,6 +256,35 @@ export default function SettingsPage() {
           </div>
         )}
 
+        {/* ── Appearance ── */}
+        {activeTab === 'appearance' && (
+          <div className="settings-section animate-fade-in">
+            <h2 className="settings-section-title">Appearance</h2>
+            <p className="settings-section-desc">Choose your theme. Changes apply immediately.</p>
+
+            <div className="theme-grid">
+              {([
+                { id: 'dark',         Icon: Moon,     label: 'Dark',         desc: 'Easy on the eyes in low light' },
+                { id: 'light',        Icon: Sun,      label: 'Light',        desc: 'Bright and clean, great for daytime' },
+                { id: 'high-contrast',Icon: Contrast, label: 'High Contrast',desc: 'Maximum readability with strong contrast' },
+              ] as { id: ThemeMode; Icon: any; label: string; desc: string }[]).map(t => (
+                <button
+                  key={t.id}
+                  className={`theme-card ${theme === t.id ? 'active' : ''}`}
+                  onClick={() => setTheme(t.id)}
+                >
+                  <t.Icon size={20} />
+                  <div>
+                    <div className="theme-name">{t.label}</div>
+                    <div className="theme-desc">{t.desc}</div>
+                  </div>
+                  {theme === t.id && <span className="theme-check">✓</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Credentials Vault ── */}
         {activeTab === 'credentials' && <CredentialsVault />}
 
@@ -304,31 +378,34 @@ export default function SettingsPage() {
         {/* ── Shortcuts ── */}
         {activeTab === 'shortcuts' && (
           <div className="settings-section animate-fade-in">
-            <h2 className="settings-section-title">Keyboard Shortcuts</h2>
-            <div className="shortcuts-table">
-              {[
-                ['⌘K',   'Open Command Palette'],
-                ['⌘T',   'New Tab'],
-                ['⌘W',   'Close Tab'],
-                ['⌘1–9', 'Switch to Tab N'],
-                ['⌘,',   'Settings'],
-                ['⌘L',   'Lock Session'],
-                ['⌘F',   'Find in Terminal'],
-                ['⌘⇧A',  'Toggle AI Sidebar'],
-                ['⌘⇧S',  'SFTP Browser'],
-                ['⌘⇧L',  'Session Logs'],
-                ['⌘⇧T',  'Topology View'],
-                ['⌘⇧B',  'Broadcast Mode'],
-                ['⌘⇧H',  'Split Horizontal'],
-                ['⌘⇧V',  'Split Vertical'],
-                ['⌘⇧4',  'Quad Split'],
-                ['⌘⇧1',  'Single Pane'],
-              ].map(([key, desc]) => (
-                <div key={key} className="shortcut-row">
-                  <code className="kbd">{key}</code>
-                  <span>{desc}</span>
+            <div className="settings-section-header">
+              <h2 className="settings-section-title">Keyboard Shortcuts</h2>
+              <button className="btn-secondary" onClick={resetShortcuts} style={{ padding: '4px 10px', fontSize: 12 }}>
+                <RotateCcw size={11} /> Reset Defaults
+              </button>
+            </div>
+            <p className="settings-section-desc">Click a shortcut to rebind it. Press the desired key combination.</p>
+
+            {['General', 'Session', 'View', 'Layout', 'Security'].map(cat => {
+              const catShortcuts = shortcuts.filter(s => s.category === cat)
+              if (catShortcuts.length === 0) return null
+              return (
+                <div key={cat} className="shortcuts-group">
+                  <div className="shortcuts-category">{cat}</div>
+                  <div className="shortcuts-table">
+                    {catShortcuts.map(s => (
+                      <ShortcutRow
+                        key={s.id}
+                        shortcut={s}
+                        onChange={(keys) => updateShortcut(s.id, keys)}
+                      />
+                    ))}
+                  </div>
                 </div>
-              ))}
+              )
+            })}
+            <div className="settings-hint">
+              Shortcuts use Cmd on macOS or Ctrl on other platforms. Tab switching (Cmd+1–9) is fixed.
             </div>
           </div>
         )}

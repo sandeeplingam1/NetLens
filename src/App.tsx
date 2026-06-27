@@ -1,5 +1,5 @@
-import { useEffect, lazy, Suspense } from 'react'
-import { useStore } from './store/appStore'
+import { useEffect, lazy, Suspense, useCallback } from 'react'
+import { useStore, matchShortcut } from './store/appStore'
 import ErrorBoundary      from './components/ErrorBoundary/ErrorBoundary'
 import Sidebar            from './components/Sidebar/Sidebar'
 import TitleBar           from './components/TitleBar/TitleBar'
@@ -64,45 +64,64 @@ export default function App() {
     return () => { unHk(); unHkC(); unKb(); unMenu() }
   }, [activeTabId])
 
-  // ── Global keyboard shortcuts ───────────────────────────────────────────────
+  // ── Global keyboard shortcuts (configurable) ─────────────────────────────────
   useEffect(() => {
+    const store = useStore.getState()
+    const { shortcuts, splitLayout: sl } = store
+
+    const shortcutMap: Record<string, () => void> = {
+      'palette':       () => { useStore.getState().toggleCommandPalette() },
+      'new-tab':       () => { useStore.getState().addTab() },
+      'close-tab':     () => { const id = useStore.getState().activeTabId; if (id) useStore.getState().closeTab(id) },
+      'settings':      () => { useStore.getState().setActiveView('settings') },
+      'lock':          () => { useStore.getState().lockSession() },
+      'toggle-ai':     () => { useStore.getState().toggleAISidebar() },
+      'sftp':          () => { useStore.getState().setActiveView('sftp') },
+      'logs':          () => { useStore.getState().setActiveView('logs') },
+      'topology':      () => { useStore.getState().setActiveView('topology') },
+      'broadcast':     () => { useStore.getState().toggleBroadcast() },
+      'split-h':       () => { useStore.getState().setSplitLayout('horizontal') },
+      'split-v':       () => { useStore.getState().setSplitLayout('vertical') },
+      'split-quad':    () => { useStore.getState().setSplitLayout('quad') },
+      'split-single':  () => { useStore.getState().setSplitLayout('single') },
+      'pane-prev':     () => {
+        const state = useStore.getState()
+        if (state.splitLayout === 'single') return
+        const count = state.splitLayout === 'quad' ? 4 : 2
+        state.setActivePaneIndex((state.activePaneIndex + count - 1) % count)
+      },
+      'pane-next':     () => {
+        const state = useStore.getState()
+        if (state.splitLayout === 'single') return
+        const count = state.splitLayout === 'quad' ? 4 : 2
+        state.setActivePaneIndex((state.activePaneIndex + 1) % count)
+      },
+    }
+
     const h = (e: KeyboardEvent) => {
+      // Tab switching (Cmd+1..9) is fixed
       const meta = e.metaKey || e.ctrlKey
-      if (meta && e.key === 'k' && !e.shiftKey) { e.preventDefault(); toggleCommandPalette() }
-      if (meta && e.key === 't')                 { e.preventDefault(); addTab() }
-      if (meta && e.key === 'w')                 { e.preventDefault(); if (activeTabId) closeTab(activeTabId) }
-      if (meta && e.key === ',')                 { e.preventDefault(); setActiveView('settings') }
-      if (meta && e.shiftKey && e.key === 'A')   { e.preventDefault(); toggleAISidebar() }
-      if (meta && e.shiftKey && e.key === 'S')   { e.preventDefault(); setActiveView('sftp') }
-      if (meta && e.shiftKey && e.key === 'L')   { e.preventDefault(); setActiveView('logs') }
-      if (meta && e.shiftKey && e.key === 'T')   { e.preventDefault(); setActiveView('topology') }
-      if (meta && e.shiftKey && e.key === 'B')   { e.preventDefault(); toggleBroadcast() }
-      if (meta && e.shiftKey && e.key === 'H')   { e.preventDefault(); setSplitLayout('horizontal') }
-      if (meta && e.shiftKey && e.key === 'V')   { e.preventDefault(); setSplitLayout('vertical') }
-      if (meta && e.shiftKey && e.key === '4')   { e.preventDefault(); setSplitLayout('quad') }
-      if (meta && e.shiftKey && e.key === '1')   { e.preventDefault(); setSplitLayout('single') }
-      if (meta && e.key === 'l')                 { e.preventDefault(); lockSession() }
-
-      if (meta && e.key === '[' && splitLayout !== 'single') {
-        e.preventDefault()
-        const paneCount = splitLayout === 'quad' ? 4 : 2
-        setActivePaneIndex((activePaneIndex + paneCount - 1) % paneCount)
-      }
-      if (meta && e.key === ']' && splitLayout !== 'single') {
-        e.preventDefault()
-        const paneCount = splitLayout === 'quad' ? 4 : 2
-        setActivePaneIndex((activePaneIndex + 1) % paneCount)
-      }
-
       if (meta && !e.shiftKey && e.key >= '1' && e.key <= '9') {
         const idx = parseInt(e.key) - 1
+        const tabs = useStore.getState().tabs
         const tab = tabs[idx]
         if (tab) { e.preventDefault(); useStore.getState().setActiveTab(tab.id) }
+        return
+      }
+
+      // Check configurable shortcuts
+      const storeNow = useStore.getState()
+      for (const s of storeNow.shortcuts) {
+        if (matchShortcut(e, s.keys)) {
+          e.preventDefault()
+          shortcutMap[s.id]?.()
+          return
+        }
       }
     }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
-  }, [tabs, activeTabId, toggleCommandPalette, addTab, closeTab, setActiveView, toggleAISidebar, toggleBroadcast, setSplitLayout, lockSession, splitLayout, activePaneIndex, setActivePaneIndex])
+  }, [])
 
   // ── Sidebar Resize Handlers ─────────────────────────────────────────────────
   const startResizeRight = (e: React.MouseEvent) => {

@@ -140,7 +140,47 @@
   cursor: pointer;
 }
 
+/* Theme grid */
+.theme-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.theme-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  text-align: left;
+  transition: all var(--transition);
+  position: relative;
+}
+.theme-card:hover { border-color: var(--accent-blue); background: var(--bg-hover); }
+.theme-card.active { border-color: var(--accent-blue); background: rgba(59,130,246,0.08); }
+.theme-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.theme-desc { font-size: 11px; color: var(--text-muted); }
+.theme-check { position: absolute; top: 8px; right: 10px; font-size: 14px; color: var(--accent-blue); }
+.settings-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 /* Shortcuts */
+.shortcuts-group { margin-top: 12px; }
+.shortcuts-category {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
 .shortcuts-table { display: flex; flex-direction: column; gap: 4px; }
 .shortcut-row {
   display: flex;
@@ -150,6 +190,11 @@
   border-radius: var(--radius-md);
   background: var(--bg-surface);
   border: 1px solid var(--border);
+  transition: border-color var(--transition);
+}
+.shortcut-row.capturing {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
 }
 .kbd {
   font-family: var(--font-mono);
@@ -161,6 +206,31 @@
   min-width: 80px;
   text-align: center;
   color: var(--accent-blue-2);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+  user-select: none;
+}
+.kbd:hover { background: var(--bg-hover); border-color: var(--accent-blue); }
+.shortcut-row.capturing .kbd {
+  background: rgba(59,130,246,0.15);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue-3);
+  animation: pulse 1.5s ease infinite;
+}
+.shortcut-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.shortcut-modified {
+  font-size: 10px;
+  color: var(--accent-amber);
+  background: rgba(245,158,11,0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
 }
 
 /* About */

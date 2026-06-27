@@ -1,8 +1,9 @@
+import { memo } from 'react'
 import { Plus, SplitSquareHorizontal, Bot } from 'lucide-react'
 import { useStore } from '../../store/appStore'
 import './TitleBar.css'
 
-export default function TitleBar() {
+export default memo(function TitleBar() {
   const { 
     addTab, toggleAISidebar, showAISidebar, 
     setSplitLayout, splitLayout 
@@ -69,4 +70,4 @@ export default function TitleBar() {
       </div>
     </div>
   )
-}
+})

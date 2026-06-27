@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Keyboard } from 'lucide-react'
 import { useStore } from '../../store/appStore'
 import './StatusBar.css'
@@ -6,7 +7,7 @@ const PROVIDER_SHORT: Record<string, string> = {
   openai: 'GPT', anthropic: 'Claude', google: 'Gemini', ollama: 'Ollama'
 }
 
-export default function StatusBar() {
+export default memo(function StatusBar() {
   const { tabs, activeTabId, aiSettings, sessions } = useStore()
   const activeTab = tabs.find(t => t.id === activeTabId)
   const session   = activeTab?.sessionId ? sessions.find(s => s.id === activeTab.sessionId) : null
@@ -60,5 +61,5 @@ export default function StatusBar() {
       </div>
     </div>
   )
-}
+})
 

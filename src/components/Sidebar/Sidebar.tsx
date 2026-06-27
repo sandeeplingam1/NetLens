@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import {
   Terminal, Monitor, FolderOpen, FileText, Settings,
   Plus, Search, X, ChevronRight, ChevronDown,
@@ -53,7 +53,7 @@ const NAV_ITEMS = [
   { id: 'settings', Icon: Settings,    label: 'Settings' },
 ]
 
-export default function Sidebar() {
+export default memo(function Sidebar() {
   const {
     sessions, selectedSessionId, selectSession, addTab,
     activeView, setActiveView, setShowNewSessionModal,
@@ -287,4 +287,4 @@ export default function Sidebar() {
       )}
     </aside>
   )
-}
+})

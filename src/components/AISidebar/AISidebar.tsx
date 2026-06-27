@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { Bot, Trash2, Settings, Send, Sparkles, AlertTriangle, Wrench,
          AlignLeft, Network, Radio, FileText, CornerDownLeft, Copy, Check } from 'lucide-react'
 import { useStore, ChatMessage, AIProvider } from '../../store/appStore'
@@ -124,7 +124,7 @@ function inlineFormat(text: string) {
   )
 }
 
-export default function AISidebar() {
+const AISidebar = memo(function AISidebar() {
   const { chatMessages, addChatMessage, updateLastMessage,
     clearChat, aiSettings, tabs, activeTabId, setActiveView } = useStore()
 
@@ -361,4 +361,6 @@ ${termCtx ? `\nCurrent terminal output context:\n\`\`\`\n${termCtx}\n\`\`\`` : '
       </div>
     </aside>
   )
-}
+})
+
+export default AISidebar

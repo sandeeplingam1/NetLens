@@ -63,6 +63,59 @@
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
 }
 
+/* ── Light theme ────────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-base:        #f8f9fb;
+  --bg-surface:     #f0f1f4;
+  --bg-elevated:    #e8eaef;
+  --bg-hover:       #e0e3e9;
+  --bg-active:      #d1d5de;
+
+  --border:         #d1d5db;
+  --border-subtle:  #e5e7eb;
+  --border-focus:   #3b82f6;
+
+  --text-primary:   #1e293b;
+  --text-secondary: #64748b;
+  --text-muted:     #94a3b8;
+  --text-link:      #2563eb;
+
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.10);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.12);
+}
+
+/* ── High-contrast theme ───────────────────────────────────────────────────── */
+[data-theme="high-contrast"] {
+  --bg-base:        #000000;
+  --bg-surface:     #0d0d0d;
+  --bg-elevated:    #1a1a1a;
+  --bg-hover:       #262626;
+  --bg-active:      #333333;
+
+  --border:         #555555;
+  --border-subtle:  #333333;
+  --border-focus:   #60a5fa;
+
+  --text-primary:   #ffffff;
+  --text-secondary: #cccccc;
+  --text-muted:     #888888;
+  --text-link:      #60a5fa;
+
+  --accent-blue:    #3b82f6;
+  --accent-blue-2:  #60a5fa;
+  --accent-blue-3:  #93c5fd;
+
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.8);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.9);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,1.0);
+}
+
+[data-theme="high-contrast"] .glass {
+  background: rgba(0, 0, 0, 0.95);
+  border: 1px solid #666;
+}
+
 /* ── Reset ───────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -268,7 +321,7 @@ input[type="checkbox"], input[type="radio"] {
 
 /* ── Glass ───────────────────────────────────────────────────────────────── */
 .glass {
-  background: rgba(15, 20, 32, 0.9);
+  background: color-mix(in srgb, var(--bg-surface) 90%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
