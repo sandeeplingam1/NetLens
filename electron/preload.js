@@ -77,6 +77,7 @@ contextBridge.exposeInMainWorld('netlensAPI', {
 
   // ── AI ───────────────────────────────────────────────────────────────────────
   aiChat: (params) => ipcRenderer.invoke('ai:chat', params),
+  agentChat: (params) => ipcRenderer.invoke('ai:agent-chat', params),
   onAIStreamChunk: (cb) => {
     const h = (_e, d) => { try { cb(d) } catch (e) { logToMain('error', 'onAIStreamChunk:', e) } }
     ipcRenderer.on('ai:stream-chunk', h)

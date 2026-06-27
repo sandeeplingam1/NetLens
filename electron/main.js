@@ -1031,6 +1031,78 @@ ipcMain.handle('ai:chat', async (event, { provider, apiKey, model, messages, bas
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
+// IPC: Agent chat (non-streaming, supports tool/function calling)
+// ─────────────────────────────────────────────────────────────────────────────
+ipcMain.handle('ai:agent-chat', async (_e, { provider, apiKey, model, messages, baseUrl, tools }) => {
+  try {
+    let url = '', headers = { 'Content-Type': 'application/json' }, body: any = {}
+
+    if (provider === 'openai') {
+      url = 'https://api.openai.com/v1/chat/completions'
+      headers['Authorization'] = `Bearer ${apiKey}`
+      body = { model: model || 'gpt-4o-mini', messages, tools, tool_choice: 'auto', max_tokens: 4096 }
+    } else if (provider === 'anthropic') {
+      url = 'https://api.anthropic.com/v1/messages'
+      headers['x-api-key'] = apiKey
+      headers['anthropic-version'] = '2023-06-01'
+      const sys = messages.find(m => m.role === 'system')
+      body = {
+        model: model || 'claude-3-5-haiku-20241022', max_tokens: 4096,
+        system: sys?.content || 'You are a helpful network engineering AI assistant.',
+        messages: messages.filter(m => m.role !== 'system'),
+        tools: tools?.map(t => ({
+          name: t.function.name,
+          description: t.function.description,
+          input_schema: t.function.parameters,
+        })),
+      }
+    } else if (provider === 'ollama') {
+      url = `${baseUrl || 'http://localhost:11434'}/api/chat`
+      body = { model: model || 'llama3', messages, stream: false, tools }
+    } else {
+      return { error: `Provider ${provider} does not support agent mode` }
+    }
+
+    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) })
+    if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`)
+
+    const data = await res.json()
+
+    // Normalize response to { message: { role, content?, tool_calls? } }
+    if (provider === 'openai') {
+      const choice = data.choices?.[0]
+      if (!choice) throw new Error('No response from API')
+      return { message: choice.message }
+    } else if (provider === 'anthropic') {
+      const content = data.content || []
+      const textContent = content.find((c: any) => c.type === 'text')
+      const toolUseContent = content.find((c: any) => c.type === 'tool_use')
+      if (toolUseContent) {
+        return {
+          message: {
+            role: 'assistant',
+            content: textContent?.text || '',
+            tool_calls: [{
+              id: toolUseContent.id,
+              type: 'function',
+              function: {
+                name: toolUseContent.name,
+                arguments: JSON.stringify(toolUseContent.input),
+              },
+            }],
+          },
+        }
+      }
+      return { message: { role: 'assistant', content: textContent?.text || '' } }
+    } else if (provider === 'ollama') {
+      return { message: data.message || { role: 'assistant', content: data.response || '' } }
+    }
+
+    return { error: 'Unsupported provider for agent mode' }
+  } catch (e: any) { return { error: e.message } }
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
 // IPC: File dialogs
 // ─────────────────────────────────────────────────────────────────────────────
 ipcMain.handle('dialog:open-file', async (_e, opts = {}) => {
