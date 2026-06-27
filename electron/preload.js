@@ -1,7 +1,14 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
+function logToMain(level, ...args) {
+  try { ipcRenderer.invoke('log:write', { level, args }) } catch {}
+}
+
 contextBridge.exposeInMainWorld('netlensAPI', {
   platform: process.platform,
+
+  // ── Logging (forward renderer logs to main process) ─────────────────────────
+  log: (level, ...args) => logToMain(level, ...args),
 
   // ── Persistence ─────────────────────────────────────────────────────────────
   storeGet: (key)        => ipcRenderer.invoke('store:get', key),
@@ -26,30 +33,30 @@ contextBridge.exposeInMainWorld('netlensAPI', {
   // Terminal event subscriptions (return unsubscribe fn)
   onTerminalOutput: (id, cb) => {
     const ch = `terminal:output:${id}`
-    const h = (_e, d) => { try { cb(d) } catch (e) { console.error('onTerminalOutput:', e) } }
+    const h = (_e, d) => { try { cb(d) } catch (e) { logToMain('error', 'onTerminalOutput:', e) } }
     ipcRenderer.on(ch, h)
     return () => ipcRenderer.removeListener(ch, h)
   },
   onTerminalExit: (id, cb) => {
     const ch = `terminal:exit:${id}`
-    const h = (_e, code) => { try { cb(code) } catch (e) { console.error('onTerminalExit:', e) } }
+    const h = (_e, code) => { try { cb(code) } catch (e) { logToMain('error', 'onTerminalExit:', e) } }
     ipcRenderer.on(ch, h)
     return () => ipcRenderer.removeListener(ch, h)
   },
 
   // SSH events
   onSSHUnknownHost: (cb) => {
-    const h = (_e, d) => { try { cb(d) } catch (e) { console.error('onSSHUnknownHost:', e) } }
+    const h = (_e, d) => { try { cb(d) } catch (e) { logToMain('error', 'onSSHUnknownHost:', e) } }
     ipcRenderer.on('ssh:unknown-host', h)
     return () => ipcRenderer.removeListener('ssh:unknown-host', h)
   },
   onSSHHostKeyChanged: (cb) => {
-    const h = (_e, d) => { try { cb(d) } catch (e) { console.error('onSSHHostKeyChanged:', e) } }
+    const h = (_e, d) => { try { cb(d) } catch (e) { logToMain('error', 'onSSHHostKeyChanged:', e) } }
     ipcRenderer.on('ssh:host-key-changed', h)
     return () => ipcRenderer.removeListener('ssh:host-key-changed', h)
   },
   onSSHKeyboardInteractive: (cb) => {
-    const h = (_e, d) => { try { cb(d) } catch (e) { console.error('onSSHKeyboardInteractive:', e) } }
+    const h = (_e, d) => { try { cb(d) } catch (e) { logToMain('error', 'onSSHKeyboardInteractive:', e) } }
     ipcRenderer.on('ssh:keyboard-interactive', h)
     return () => ipcRenderer.removeListener('ssh:keyboard-interactive', h)
   },
@@ -71,12 +78,12 @@ contextBridge.exposeInMainWorld('netlensAPI', {
   // ── AI ───────────────────────────────────────────────────────────────────────
   aiChat: (params) => ipcRenderer.invoke('ai:chat', params),
   onAIStreamChunk: (cb) => {
-    const h = (_e, d) => { try { cb(d) } catch (e) { console.error('onAIStreamChunk:', e) } }
+    const h = (_e, d) => { try { cb(d) } catch (e) { logToMain('error', 'onAIStreamChunk:', e) } }
     ipcRenderer.on('ai:stream-chunk', h)
     return () => ipcRenderer.removeListener('ai:stream-chunk', h)
   },
   onAIStreamDone: (cb) => {
-    const h = (_e, d) => { try { cb(d) } catch (e) { console.error('onAIStreamDone:', e) } }
+    const h = (_e, d) => { try { cb(d) } catch (e) { logToMain('error', 'onAIStreamDone:', e) } }
     ipcRenderer.on('ai:stream-done', h)
     return () => ipcRenderer.removeListener('ai:stream-done', h)
   },
@@ -93,7 +100,7 @@ contextBridge.exposeInMainWorld('netlensAPI', {
   portFwdStop:  (opts) => ipcRenderer.invoke('portfwd:stop',  opts),
   portFwdList:  ()     => ipcRenderer.invoke('portfwd:list'),
   onPortFwdError: (cb) => {
-    const h = (_e, d) => { try { cb(d) } catch (e) { console.error('onPortFwdError:', e) } }
+    const h = (_e, d) => { try { cb(d) } catch (e) { logToMain('error', 'onPortFwdError:', e) } }
     ipcRenderer.on('portfwd:error', h)
     return () => ipcRenderer.removeListener('portfwd:error', h)
   },

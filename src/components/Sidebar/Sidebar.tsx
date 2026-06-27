@@ -6,6 +6,7 @@ import {
   ArrowRight, Zap, Shield, GitBranch, Upload, Download, Network
 } from 'lucide-react'
 import { useStore, Session, EnvTag } from '../../store/appStore'
+import WorkspaceSwitcher from '../WorkspaceSwitcher/WorkspaceSwitcher'
 import './Sidebar.css'
 
 const ENV_COLORS: Record<EnvTag, string> = {
@@ -57,6 +58,7 @@ export default function Sidebar() {
     sessions, selectedSessionId, selectSession, addTab,
     activeView, setActiveView, setShowNewSessionModal,
     setEditingSession, deleteSession, cloneSession,
+    workspaces, activeWorkspaceId,
   } = useStore()
 
   const api = (window as any).netlensAPI
@@ -65,7 +67,10 @@ export default function Sidebar() {
   const [collapsed, setCollapsed]   = useState<Record<string, boolean>>({})
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; session: Session } | null>(null)
 
-  const filtered = sessions.filter(s =>
+  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId)
+  const workspaceSessionIds = new Set(activeWorkspace?.sessionIds || sessions.map(s => s.id))
+  const workspaceSessions = sessions.filter(s => workspaceSessionIds.has(s.id))
+  const filtered = workspaceSessions.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     s.host.toLowerCase().includes(search.toLowerCase()) ||
     s.group.toLowerCase().includes(search.toLowerCase())
@@ -121,8 +126,11 @@ export default function Sidebar() {
             </defs>
           </svg>
         </div>
-        <span className="logo-text">Helix</span>
+        <span className="logo-text">NetLens</span>
       </div>
+
+      {/* Workspace Switcher */}
+      <WorkspaceSwitcher />
 
       {/* Nav */}
       <nav className="sidebar-nav">

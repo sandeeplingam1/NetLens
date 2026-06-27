@@ -103,7 +103,22 @@ export interface KeyboardInteractiveEvent {
   id: string; prompts: { prompt: string; echo: boolean }[]
 }
 
+export interface Workspace {
+  id: string; name: string; description?: string
+  sessionIds: string[]; createdAt: number
+}
+
 export interface AppState {
+  // Workspace profiles
+  workspaces: Workspace[]
+  activeWorkspaceId: string | null
+  addWorkspace:             (w: Omit<Workspace, 'id' | 'createdAt'>) => void
+  updateWorkspace:          (id: string, u: Partial<Workspace>) => void
+  deleteWorkspace:          (id: string) => void
+  setActiveWorkspace:       (id: string | null) => void
+  addSessionToWorkspace:    (workspaceId: string, sessionId: string) => void
+  removeSessionFromWorkspace: (workspaceId: string, sessionId: string) => void
+
   // Sessions
   sessions: Session[]
   selectedSessionId: string | null
@@ -192,6 +207,8 @@ export interface AppState {
   setShowMacroModal:      (v: boolean) => void
   showPortFwdModal:       boolean
   setShowPortFwdModal:    (v: boolean) => void
+  showWorkspaceModal:     boolean
+  setShowWorkspaceModal:  (v: boolean) => void
   isLocked:               boolean
   lockSession:            () => void
   unlockSession:          (pin: string) => boolean
@@ -236,12 +253,71 @@ async function loadFromStore<T>(key: string, fallback: T): Promise<T> {
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 export const useStore = create<AppState>((set, get) => ({
+  // Workspaces
+  workspaces: [],
+  activeWorkspaceId: null,
+  addWorkspace: (w) => set(st => {
+    const workspace: Workspace = { ...w, id: crypto.randomUUID(), createdAt: Date.now() }
+    const workspaces = [...st.workspaces, workspace]
+    persist('workspaces', workspaces)
+    return { workspaces, activeWorkspaceId: workspace.id }
+  }),
+  updateWorkspace: (id, u) => set(st => {
+    const workspaces = st.workspaces.map(w => w.id === id ? { ...w, ...u } : w)
+    persist('workspaces', workspaces)
+    return { workspaces }
+  }),
+  deleteWorkspace: (id) => set(st => {
+    const workspaces = st.workspaces.filter(w => w.id !== id)
+    const activeWorkspaceId = st.activeWorkspaceId === id
+      ? (workspaces[workspaces.length - 1]?.id || null)
+      : st.activeWorkspaceId
+    persist('workspaces', workspaces)
+    return { workspaces, activeWorkspaceId }
+  }),
+  setActiveWorkspace: (id) => {
+    persist('activeWorkspaceId', id)
+    set({ activeWorkspaceId: id })
+  },
+  addSessionToWorkspace: (workspaceId, sessionId) => set(st => {
+    const workspaces = st.workspaces.map(w =>
+      w.id === workspaceId && !w.sessionIds.includes(sessionId)
+        ? { ...w, sessionIds: [...w.sessionIds, sessionId] }
+        : w
+    )
+    persist('workspaces', workspaces)
+    return { workspaces }
+  }),
+  removeSessionFromWorkspace: (workspaceId, sessionId) => set(st => {
+    const workspaces = st.workspaces.map(w =>
+      w.id === workspaceId
+        ? { ...w, sessionIds: w.sessionIds.filter(s => s !== sessionId) }
+        : w
+    )
+    persist('workspaces', workspaces)
+    return { workspaces }
+  }),
+
   // Sessions
   sessions: DEMO_SESSIONS,
   selectedSessionId: null,
   addSession: (s) => {
     const session = { ...s, id: crypto.randomUUID(), verifyHost: s.verifyHost ?? true, keepaliveInterval: s.keepaliveInterval ?? 30000 }
-    set(st => { const sessions = [...st.sessions, session]; persist('sessions', sessions); return { sessions } })
+    set(st => {
+      const sessions = [...st.sessions, session]
+      persist('sessions', sessions)
+      // Auto-add to active workspace
+      if (st.activeWorkspaceId) {
+        const workspaces = st.workspaces.map(w =>
+          w.id === st.activeWorkspaceId
+            ? { ...w, sessionIds: [...w.sessionIds, session.id] }
+            : w
+        )
+        persist('workspaces', workspaces)
+        return { sessions, workspaces }
+      }
+      return { sessions }
+    })
   },
   updateSession: (id, u) => set(st => {
     const sessions = st.sessions.map(s => s.id === id ? { ...s, ...u } : s)
@@ -249,7 +325,12 @@ export const useStore = create<AppState>((set, get) => ({
   }),
   deleteSession: (id) => set(st => {
     const sessions = st.sessions.filter(s => s.id !== id)
-    persist('sessions', sessions); return { sessions }
+    const workspaces = st.workspaces.map(w => ({
+      ...w, sessionIds: w.sessionIds.filter(sid => sid !== id)
+    }))
+    persist('sessions', sessions)
+    persist('workspaces', workspaces)
+    return { sessions, workspaces }
   }),
   selectSession: (id) => set({ selectedSessionId: id }),
   cloneSession: (id) => {
@@ -264,8 +345,19 @@ export const useStore = create<AppState>((set, get) => ({
       .filter(s => !existing.has(`${s.host}:${s.port}:${s.username}`))
       .map(s => ({ ...s, id: crypto.randomUUID() }))
     const sessions = [...st.sessions, ...newOnes]
+    const newIds = newOnes.map(s => s.id)
+    // Auto-add imported sessions to active workspace
+    let workspaces = st.workspaces
+    if (st.activeWorkspaceId && newIds.length > 0) {
+      workspaces = st.workspaces.map(w =>
+        w.id === st.activeWorkspaceId
+          ? { ...w, sessionIds: [...w.sessionIds, ...newIds] }
+          : w
+      )
+    }
     persist('sessions', sessions)
-    return { sessions }
+    persist('workspaces', workspaces)
+    return { sessions, workspaces }
   }),
 
   // Credentials
@@ -413,6 +505,8 @@ export const useStore = create<AppState>((set, get) => ({
   setShowMacroModal:      (v) => set({ showMacroModal: v }),
   showPortFwdModal:       false,
   setShowPortFwdModal:    (v) => set({ showPortFwdModal: v }),
+  showWorkspaceModal:     false,
+  setShowWorkspaceModal:  (v) => set({ showWorkspaceModal: v }),
 
   // Lock
   isLocked:  false,
@@ -434,13 +528,15 @@ function persist(key: string, value: any) {
 // ── Hydrate from store on boot ─────────────────────────────────────────────────
 async function hydrate() {
   try {
-    const [sessions, aiSettings, termSettings, macros, highlights, credentials] = await Promise.all([
+    const [sessions, aiSettings, termSettings, macros, highlights, credentials, workspaces, activeWorkspaceId] = await Promise.all([
       loadFromStore<Session[]>('sessions', []),
       loadFromStore<Partial<AISettings>>('aiSettings', {}),
       loadFromStore<Partial<TermSettings>>('termSettings', {}),
       loadFromStore<Macro[]>('macros', []),
       loadFromStore<HighlightRule[]>('highlights', []),
       loadFromStore<Credential[]>('credentials', []),
+      loadFromStore<Workspace[]>('workspaces', []),
+      loadFromStore<string | null>('activeWorkspaceId', null),
     ])
     useStore.setState(st => ({
       sessions:     sessions.length > 0 ? sessions : st.sessions,
@@ -449,9 +545,11 @@ async function hydrate() {
       macros:       macros.length > 0 ? macros : st.macros,
       highlights:   highlights.length > 0 ? highlights : st.highlights,
       credentials:  credentials.length > 0 ? credentials : st.credentials,
+      workspaces:   workspaces.length > 0 ? workspaces : st.workspaces,
+      activeWorkspaceId: activeWorkspaceId || st.activeWorkspaceId,
     }))
   } catch (e) {
-    console.warn('Hydration skipped:', e)
+    (window as any).netlensAPI?.log?.('warn', 'Hydration skipped:', e)
   }
 }
 setTimeout(hydrate, 100)

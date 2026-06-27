@@ -1,6 +1,8 @@
 export interface HelixAPI {
   platform: string
 
+  log: (level: 'error' | 'warn' | 'info' | 'debug', ...args: any[]) => void
+
   storeGet: (key: string) => Promise<any>
   storeSet: (key: string, value: any) => Promise<any>
 

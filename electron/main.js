@@ -1,15 +1,17 @@
 'use strict'
 
+const log = require('./logger')
+
 // ── Global error handlers ─────────────────────────────────────────────────────
 process.on('uncaughtException', (error) => {
-  console.error('[FATAL] Uncaught Exception:', error)
+  log.error('[FATAL] Uncaught Exception:', error)
   try {
     dialog.showErrorBox('NetLens - Unexpected Error',
       `An unexpected error occurred:\n\n${error.message}\n\nPlease restart the application.`)
   } catch {}
 })
 process.on('unhandledRejection', (reason) => {
-  console.error('[FATAL] Unhandled Rejection:', reason)
+  log.error('[FATAL] Unhandled Rejection:', reason)
 })
 
 const { app, BrowserWindow, ipcMain, shell, dialog, Menu, nativeImage } = require('electron')
@@ -22,11 +24,12 @@ const crypto = require('crypto')
 // ── Native modules (lazy) ────────────────────────────────────────────────────
 let pty, Store, keytar, SerialPort
 
-try { pty      = require('node-pty')           } catch (e) { console.warn('node-pty:', e.message) }
-try { const { default: S } = require('electron-store'); Store = S } catch (e) { console.warn('electron-store:', e.message) }
-try { keytar   = require('keytar')             } catch (e) { console.warn('keytar not available (credentials stored encrypted in store)') }
-try { SerialPort = require('serialport').SerialPort } catch (e) { console.warn('serialport:', e.message) }
+try { pty      = require('node-pty')           } catch (e) { log.warn('node-pty:', e.message) }
+try { const { default: S } = require('electron-store'); Store = S } catch (e) { log.warn('electron-store:', e.message) }
+try { keytar   = require('keytar')             } catch (e) { log.warn('keytar not available (credentials stored encrypted in store)') }
+try { SerialPort = require('serialport').SerialPort } catch (e) { log.warn('serialport:', e.message) }
 
+const { runMigrations }  = require('./migration')
 const { Client: SSHClient } = require('ssh2')
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -78,10 +81,21 @@ if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true })
 let mainWindow = null
 
 // ── Known hosts ───────────────────────────────────────────────────────────────
-function getKnownHosts() { return store?.get('knownHosts') || {} }
+function getKnownHosts() {
+  const raw = store?.get('knownHosts') || []
+  // Support both legacy object format and new array format
+  if (Array.isArray(raw)) return raw
+  return Object.entries(raw).map(([key, fp]) => {
+    const [host, port] = key.split(':')
+    return { host, port: parseInt(port, 10) || 22, fingerprint: fp, addedAt: Date.now() }
+  })
+}
 function saveKnownHost(host, port, fingerprint) {
   const kh = getKnownHosts()
-  kh[`${host}:${port}`] = fingerprint
+  const idx = kh.findIndex(h => h.host === host && h.port === port)
+  const entry = { host, port, fingerprint, addedAt: Date.now() }
+  if (idx >= 0) kh[idx] = entry
+  else kh.push(entry)
   store?.set('knownHosts', kh)
 }
 
@@ -163,11 +177,11 @@ function setupAutoUpdate() {
     })
 
     autoUpdater.on('error', (err) => {
-      console.warn('Auto-update error:', err.message)
+      log.warn('Auto-update error:', err.message)
     })
 
     autoUpdater.checkForUpdates()
-  } catch { console.log('Auto-update not available (electron-updater not installed)') }
+  } catch { log.info('Auto-update not available (electron-updater not installed)') }
 }
 
 // ── Window ────────────────────────────────────────────────────────────────────
@@ -196,7 +210,7 @@ function createWindow() {
 
   // Handle renderer crash
   mainWindow.webContents.on('render-process-gone', (event, details) => {
-    console.error('Renderer process crashed:', details.reason)
+    log.error('Renderer process crashed:', details.reason)
     dialog.showMessageBox(mainWindow, {
       type: 'error',
       title: 'Renderer Crashed',
@@ -313,6 +327,7 @@ function buildAppMenu() {
 }
 
 app.whenReady().then(() => {
+  if (store) runMigrations(store)
   setCSP()
   createWindow()
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
@@ -348,6 +363,16 @@ function cleanupTerminal(id) {
 // ─────────────────────────────────────────────────────────────────────────────
 ipcMain.handle('store:get', (_e, key)        => store?.get(key))
 ipcMain.handle('store:set', (_e, key, value) => store?.set(key, value))
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IPC: Renderer logging (forward from preload/renderer to main logger)
+// ─────────────────────────────────────────────────────────────────────────────
+ipcMain.handle('log:write', (_e, { level, args }) => {
+  const msg = args.map(a => typeof a === 'object' ? (a?.message || JSON.stringify(a)) : String(a)).join(' ')
+  if (level === 'error') log.error(`[Renderer] ${msg}`)
+  else if (level === 'warn') log.warn(`[Renderer] ${msg}`)
+  else log.info(`[Renderer] ${msg}`)
+})
 
 // ─────────────────────────────────────────────────────────────────────────────
 // IPC: Keychain (macOS Keychain via keytar)
@@ -389,9 +414,17 @@ ipcMain.handle('serial:list', async () => {
 // IPC: Known hosts
 // ─────────────────────────────────────────────────────────────────────────────
 ipcMain.handle('hosts:list',   () => getKnownHosts())
-ipcMain.handle('hosts:delete', (_e, { key }) => {
+ipcMain.handle('hosts:delete', (_e, { key, host, port }) => {
   const kh = getKnownHosts()
-  delete kh[key]
+  if (key) {
+    // Legacy: key is "host:port"
+    const [h, p] = key.split(':')
+    const idx = kh.findIndex(e => e.host === h && e.port === (parseInt(p, 10) || 22))
+    if (idx >= 0) kh.splice(idx, 1)
+  } else if (host && port) {
+    const idx = kh.findIndex(e => e.host === host && e.port === port)
+    if (idx >= 0) kh.splice(idx, 1)
+  }
   store?.set('knownHosts', kh)
   return { ok: true }
 })
@@ -876,7 +909,7 @@ ipcMain.handle('log:start', (_e, { id, name }) => {
   const filename = `${name.replace(/[^a-zA-Z0-9-]/g, '_')}_${ts}.log`
   const logPath  = path.join(logDir, filename)
   const stream   = fs.createWriteStream(logPath, { flags: 'a', encoding: 'utf8' })
-  stream.write(`=== Helix Session Log: ${name} ===\n=== Started: ${new Date().toISOString()} ===\n\n`)
+  stream.write(`=== NetLens Session Log: ${name} ===\n=== Started: ${new Date().toISOString()} ===\n\n`)
   logStreams.set(id, stream)
   return { ok: true, logPath }
 })
@@ -1094,7 +1127,7 @@ ipcMain.handle('sessions:importSecureCRT', async () => {
             })
           }
         } catch (e) {
-          console.error(`Failed to parse ${fullPath}:`, e)
+          log.error(`Failed to parse ${fullPath}:`, e)
         }
       }
     }
