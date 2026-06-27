@@ -108,7 +108,7 @@ contextBridge.exposeInMainWorld('netlensAPI', {
 
   // ── Logging ──────────────────────────────────────────────────────────────────
   logStart:   (opts) => ipcRenderer.invoke('log:start',    opts),
-  logWrite:   (opts) => ipcRenderer.invoke('log:write',    opts),
+  logWrite:   (opts) => ipcRenderer.invoke('log:session-write',    opts),
   logStop:    (opts) => ipcRenderer.invoke('log:stop',     opts),
   logOpenDir: ()     => ipcRenderer.invoke('log:open-dir'),
   logList:    ()     => ipcRenderer.invoke('log:list'),

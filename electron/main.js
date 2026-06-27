@@ -913,7 +913,7 @@ ipcMain.handle('log:start', (_e, { id, name }) => {
   logStreams.set(id, stream)
   return { ok: true, logPath }
 })
-ipcMain.handle('log:write',    (_e, { id, data })  => { logStreams.get(id)?.write(data) })
+ipcMain.handle('log:session-write',    (_e, { id, data })  => { logStreams.get(id)?.write(data) })
 ipcMain.handle('log:stop',     (_e, { id })         => {
   const s = logStreams.get(id)
   if (s) { s.write(`\n=== Session Ended: ${new Date().toISOString()} ===\n`); s.end() }
@@ -1035,7 +1035,7 @@ ipcMain.handle('ai:chat', async (event, { provider, apiKey, model, messages, bas
 // ─────────────────────────────────────────────────────────────────────────────
 ipcMain.handle('ai:agent-chat', async (_e, { provider, apiKey, model, messages, baseUrl, tools }) => {
   try {
-    let url = '', headers = { 'Content-Type': 'application/json' }, body: any = {}
+    let url = '', headers = { 'Content-Type': 'application/json' }, body = {}
 
     if (provider === 'openai') {
       url = 'https://api.openai.com/v1/chat/completions'
@@ -1075,8 +1075,8 @@ ipcMain.handle('ai:agent-chat', async (_e, { provider, apiKey, model, messages, 
       return { message: choice.message }
     } else if (provider === 'anthropic') {
       const content = data.content || []
-      const textContent = content.find((c: any) => c.type === 'text')
-      const toolUseContent = content.find((c: any) => c.type === 'tool_use')
+      const textContent = content.find((c) => c.type === 'text')
+      const toolUseContent = content.find((c) => c.type === 'tool_use')
       if (toolUseContent) {
         return {
           message: {
@@ -1099,7 +1099,7 @@ ipcMain.handle('ai:agent-chat', async (_e, { provider, apiKey, model, messages, 
     }
 
     return { error: 'Unsupported provider for agent mode' }
-  } catch (e: any) { return { error: e.message } }
+  } catch (e) { return { error: e.message } }
 })
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -15,7 +15,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "postinstall": "electron-rebuild -f -w node-pty,keytar,cpu-features,@serialport/bindings-cpp"
+    "postinstall": "electron-rebuild -f -w node-pty,keytar,@serialport/bindings-cpp"
   },
   "build": {
     "appId": "com.netlens.terminal",
@@ -31,8 +31,7 @@
     "asarUnpack": [
       "node_modules/node-pty/**",
       "node_modules/keytar/**",
-      "node_modules/@serialport/**",
-      "node_modules/cpu-features/**"
+      "node_modules/@serialport/**"
     ],
     "mac": {
       "category": "public.app-category.developer-tools",

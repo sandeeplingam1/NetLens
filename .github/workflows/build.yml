@@ -63,6 +63,8 @@ jobs:
       with:
         node-version: 20
         cache: 'npm'
+    - name: Install system deps
+      run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev libudev-dev
     - run: npm install
     - run: npm run build:linux
       env:
