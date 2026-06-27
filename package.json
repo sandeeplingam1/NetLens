@@ -15,7 +15,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "postinstall": "electron-rebuild -f -w node-pty,keytar,@serialport/bindings-cpp"
+    "postinstall": "node scripts/rebuild-native.js"
   },
   "build": {
     "appId": "com.netlens.terminal",
