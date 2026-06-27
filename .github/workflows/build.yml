@@ -34,7 +34,9 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: NetLens-Mac
-        path: release/*.{dmg,zip}
+        path: |
+          release/*.dmg
+          release/*.zip
 
   build-windows:
     needs: test
@@ -72,4 +74,6 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: NetLens-Linux
-        path: release/*.{AppImage,deb}
+        path: |
+          release/*.AppImage
+          release/*.deb
