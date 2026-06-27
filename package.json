@@ -68,8 +68,8 @@
   },
   "publish": {
     "provider": "github",
-    "owner": "sandeep lingam",
-    "repo": "netlens"
+    "owner": "sandeeplingam1",
+    "repo": "NetLens"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
